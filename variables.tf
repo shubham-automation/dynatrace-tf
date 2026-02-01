@@ -26,14 +26,12 @@ variable "dynatrace_oneagent_token" {
   type        = string
   sensitive   = true
   description = "Dynatrace PaaS token for OneAgent installation"
-  default = "dt0c01.YYRLT7CKYQQSHSZ7ACFD5ZMZ.UJLK72OZPMRVRQODLGJII4TJOGQ5PNRSAIWLSXQPWZLAEFYPHHVZWVGGLTYBR2T5"
 }
 
 variable "dynatrace_activegate_token" {
   type        = string
   sensitive   = true
   description = "Dynatrace token for ActiveGate installation"
-  default = "dt0c01.JGE3Z6TCFTZAOOM4FKQ2SYYV.VI3PBD6APTDNSA4H7IOWF6ZR2O22NYOXWV4HCFXOOLDQHO4ZPPWSCNONITXA6JVR"
 }
 
 variable "dynatrace_monitoring_role_name" {
