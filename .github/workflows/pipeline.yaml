@@ -1,0 +1,71 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # For OIDC
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.4"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="dynatrace_env_url=${{ secrets.DYNATRACE_ENV_URL }}" \
+            -var="dynatrace_oneagent_token=${{ secrets.DYNATRACE_ONEAGENT_TOKEN }}" \
+            -var="dynatrace_activegate_token=${{ secrets.DYNATRACE_ACTIVEGATE_TOKEN }}" \
+            -var="github_repo_owner=${{ github.repository_owner }}" \
+            -var="github_repo_name=${{ github.event.repository.name }}"
+
+      - name: Terraform Apply (on push to main)
+        #if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          terraform apply -auto-approve \
+            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="dynatrace_env_url=${{ secrets.DYNATRACE_ENV_URL }}" \
+            -var="dynatrace_oneagent_token=${{ secrets.DYNATRACE_ONEAGENT_TOKEN }}" \
+            -var="dynatrace_activegate_token=${{ secrets.DYNATRACE_ACTIVEGATE_TOKEN }}" \
+            -var="github_repo_owner=${{ github.repository_owner }}" \
+            -var="github_repo_name=${{ github.event.repository.name }}"
+
+      - name: Terraform Destroy (if commit message contains 'destroy')
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, 'destroy')
+        run: |
+          terraform destroy -auto-approve \
+            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="dynatrace_env_url=${{ secrets.DYNATRACE_ENV_URL }}" \
+            -var="dynatrace_oneagent_token=${{ secrets.DYNATRACE_ONEAGENT_TOKEN }}" \
+            -var="dynatrace_activegate_token=${{ secrets.DYNATRACE_ACTIVEGATE_TOKEN }}" \
+            -var="github_repo_owner=${{ github.repository_owner }}" \
+            -var="github_repo_name=${{ github.event.repository.name }}"
